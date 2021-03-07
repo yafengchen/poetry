@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<style>
+
+</style>
+
+<head>
+    <title>Poetry</title>
+</head>
+
+<div class="result" align="center">
+    <form action="{{ url_for('main') }}" method="POST">
+      <button name="writeBtn" type="submit">Write</button>
+    </form>
+    <p>Hello, my poetry:</p>
+    {% if result %}
+		  {% for line in result %}
+   		<p>{{ line }}</p>
+   		{% endfor %}
+    {% endif %}
+</div>
+
+</html>

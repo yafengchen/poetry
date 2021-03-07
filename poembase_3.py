@@ -113,11 +113,10 @@ class PoemBase:
         self.blacklist = []
         self.previous_sent = None
         if constraints == ('rhyme'):
-            result = self.writeRhyme(nmfDim)
-        return result
+            self.writeRhyme(nmfDim)
 
     def writeRhyme(self, nmfDim):
-        wrote = []
+        poetry = []
         rhymeStructure = self.getRhymeStructure()
         if nmfDim == 'random':
             nmfDim = random.randint(0,self.W.shape[1] - 1)
@@ -132,36 +131,43 @@ class PoemBase:
             sys.stdout.write('\n' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' NO nmfdim' + '\n\n')
             self.log.write('\n' + datetime.now().strftime("%Y-%m-%d %H:%M:%S") + ' NO nmfdim' + '\n\n')
         for el in rhymeStructure:
+            print('el in rhymeStructure:')
+            print(el)
             if el:
                 try:
                     words = self.getSentence(rhyme=el, syllables = True, nmf=nmfDim)
+                    poetry.append(words)
                 except KeyError as e:
                     print('err', e)
                     continue
                 else:
-                    #sys.stdout.write(' '.join(words) + '\n')
-                    #self.log.write(' '.join(words) + '\n')
-                    line = ' '.join(words) + '\n'
-                    wrote.append(line)
+                    sys.stdout.write(' '.join(words) + '\n')
+                    self.log.write(' '.join(words) + '\n')
                     try:
                         self.blacklist.append(self.rhymeDictionary[words[-1]])
+                        print('blacklist:')
+                        print(self.blacklist)
                         self.blacklist_words = self.blacklist_words.union(words)
+                        print('blacklist_words:')
+                        print(self.blacklist_words)
                     except KeyError as e:
                         #means verse does not follow rhyme, probably because of entropy computations
                         #do not show error for presentation
-                        #print('err blacklist', e)
+                        print('err blacklist', e)
                         pass
                     except IndexError as e2:
                         print('err blacklist index', e2)
                     self.previous_sent = words
             else:
-                #sys.stdout.write('\n')
-                #self.log.write('\n')
-                wrote.append(" ")
-        #self.signature()
-        #self.log.write('\n\n')
-        #self.log.flush()
-        return wrote
+                sys.stdout.write('\n')
+                self.log.write('\n')
+        self.signature()
+        self.log.write('\n\n')
+        self.log.flush()
+        sys.stdout.write('Fininshed version:\n')
+        for verse in poetry:
+            sys.stdout.write(' '.join(verse) + '\n')
+        self.signature()
 
     def getSentence(self, rhyme, syllables, nmf):
         if self.previous_sent:
@@ -170,8 +176,6 @@ class PoemBase:
             previous = None
         if rhyme:
             rhymePrior = self.createRhymeProbVector(rhyme)
-            # print("rhymePrior")
-            # print(rhymePrior)#eg [8.33333333e-02 8.33333333e-22 8.33333333e-22 ... 8.33333333e-22 8.33333333e-22 8.33333333e-22]
         else:
             rhymePrior = None
         if not nmf == None:
@@ -214,9 +218,11 @@ class PoemBase:
 
         scoreList.sort()
         scoreList.reverse()
-        # print("scoreList")
-        # print(scoreList) #eg [(0.7076045896037259, ['and', ',', 'yes', ',', 'we', 'are', 'in', 'perfect', 'conditions'], [0.582074, 0.6933292737955485, 0.9264877020113145])...]
-        return scoreList[0][1]
+        candidates = [scoreList[0][1], scoreList[1][1], scoreList[2][1]]
+        candiate_index = self.let_user_pick(candidates)
+        user_modified = self.let_user_modify(scoreList[candiate_index-1][1])
+        return user_modified
+        #return scoreList[0][1]
     
     def let_user_pick(self, options):
         print("Please choose:")
@@ -228,8 +234,17 @@ class PoemBase:
                 return int(i)
         except:
             pass
-        return None
 
+    def let_user_modify(self, verse):
+        print("Are you satisfied? Y/N")
+        answer = input("Please answer (Y/N): ")
+        if answer == 'N' or answer == 'n':
+          formatted = ' '.join(verse)
+          print("Please modify: " + formatted)
+          modified_verse = input("Enter modified verse: ")
+          return modified_verse.split()
+        else:
+          return verse
     def getRhymeStructure(self, cutoff=10):
         chosenList = []
         mapDict = {}
